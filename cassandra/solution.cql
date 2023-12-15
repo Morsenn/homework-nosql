@@ -19,15 +19,16 @@ create table user_posts (
     PRIMARY KEY (user_id, created_at)
 ) with clustering order by (created_at desc);
 
--- Добавил в ключ post_id, так как инчае ключ может быть не уникальным
+-- Добавил в ключ post_id, так как иначе ключ может быть не уникальным
 create table topic_of_posts (
     post_id int,
     user_id int,
     username varchar,
     topic_id int,
-    created_at timestamp,
-    PRIMARY KEY (topic_id, created_at, post_id)
-) with clustering order by (created_at desc);
+    creation_date date,
+    creation_time time,
+    PRIMARY KEY ((topic_id, creation_date), creation_time, post_id)
+) with clustering order by (creation_time desc);
 
 SELECT
     post_id,
@@ -47,8 +48,7 @@ WHERE
     user_id = 1
 LIMIT 1;
 
--- Не понял что означает "после заданной даты", если дата - это тип данных date. Если это timestamp, то
--- всё ок
+
 SELECT
     post_id,
     content,
@@ -56,15 +56,14 @@ SELECT
 FROM user_posts
 WHERE
     user_id = 1
-    AND created_at > '2023-12-01 01:00:00';
+    AND created_at >= '2023-12-01' + 1d;
 
 SELECT
     user_id,
     username,
     post_id,
-    created_at
+    creation_time
 FROM topic_of_posts
 WHERE
     topic_id = 1
-    AND created_at >= '2023-12-01'
-    AND created_at < '2023-12-01' + 1d;
+    AND creation_date = '2023-12-01';
