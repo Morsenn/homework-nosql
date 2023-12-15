@@ -1,1 +1,69 @@
--- TODO: Implementation
+describe cluster;
+
+create keyspace my_ks with replication = {'class': 'SimpleStrategy', 'replication_factor': 1};
+use my_ks;
+-- В CQL нельзя наложить огранчичение на длину строки, text и varchar - синонимы
+create table users (
+    user_id int,
+    username varchar,
+    email varchar,
+    PRIMARY KEY (user_id)
+);
+
+create table user_posts (
+    post_id int,
+    user_id int,
+    username varchar,
+    content text,
+    created_at timestamp,
+    PRIMARY KEY (user_id, created_at)
+) with clustering order by (created_at desc);
+
+-- Добавил в ключ post_id, так как иначе ключ может быть не уникальным
+create table topic_of_posts (
+    post_id int,
+    user_id int,
+    username varchar,
+    topic_id int,
+    creation_date date,
+    creation_time time,
+    PRIMARY KEY ((topic_id, creation_date), creation_time, post_id)
+) with clustering order by (creation_time desc);
+
+SELECT
+    post_id,
+    content,
+    created_at
+FROM user_posts
+WHERE
+    user_id = 1;
+
+SELECT
+    post_id,
+    content,
+    created_at,
+    username
+FROM user_posts
+WHERE
+    user_id = 1
+LIMIT 1;
+
+
+SELECT
+    post_id,
+    content,
+    created_at
+FROM user_posts
+WHERE
+    user_id = 1
+    AND created_at >= '2023-12-01' + 1d;
+
+SELECT
+    user_id,
+    username,
+    post_id,
+    creation_time
+FROM topic_of_posts
+WHERE
+    topic_id = 1
+    AND creation_date = '2023-12-01';

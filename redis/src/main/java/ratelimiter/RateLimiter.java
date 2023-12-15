@@ -4,6 +4,8 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.time.Instant;
+import java.util.Objects;
+
 import redis.clients.jedis.Jedis;
 import redis.clients.jedis.JedisPool;
 
@@ -12,17 +14,27 @@ public class RateLimiter {
   private final Jedis redis;
   private final String label;
   private final long maxRequestCount;
-  private final long timeWindowSeconds;
+  private final long timeWindowMilliseconds;
 
   public RateLimiter(Jedis redis, String label, long maxRequestCount, long timeWindowSeconds) {
     this.redis = redis;
     this.label = label;
     this.maxRequestCount = maxRequestCount;
-    this.timeWindowSeconds = timeWindowSeconds;
+    this.timeWindowMilliseconds = 1000 * timeWindowSeconds;
+    this.redis.del(label);
   }
 
   public boolean pass() {
-    // TODO: Implementation
+    long now = Instant.now().toEpochMilli();
+    String oldestPassedRequest = redis.lindex(label, 0);
+    if (Objects.nonNull(oldestPassedRequest)
+        && now - Long.parseLong(oldestPassedRequest) > timeWindowMilliseconds) {
+      redis.lpop(label);
+    }
+    if (redis.llen(label) < maxRequestCount) {
+      redis.rpush(label, Long.toString(now));
+      return true;
+    }
     return false;
   }
 
